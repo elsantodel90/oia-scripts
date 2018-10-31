@@ -10,5 +10,6 @@ echo "Adding users to ContestID" $1
 
 while read user pass
 do
-    cmsAddUser -c $1 -p $pass $user "" $user
+    cmsAddUser -p $pass $user "" $user
+    cmsAddParticipation -c $1 $user
 done
