@@ -3,13 +3,15 @@ import os
 import sys
 
 query = """SELECT submissions.id, username, tasks.name, loid , language
-                   FROM fsobjects, files, submissions, users, tasks 
+                   FROM fsobjects, files, submissions, participations, users, tasks 
                    WHERE files.submission_id = submissions.id 
+                   AND   participations.contest_id = tasks.contest_id 
+                   AND   participations.user_id = users.id 
                    AND   submissions.task_id = tasks.id 
-                   AND   submissions.user_id = users.id
+                   AND   submissions.participation_id = participations.id
                    AND   fsobjects.digest = files.digest
                    AND   tasks.contest_id = %(contestId)s;
-                """
+        """
 
 def fullyCreateFile(filename):
         if not os.path.exists(os.path.dirname(filename)):
@@ -32,7 +34,7 @@ def parseParams():
                 exit()
 def run(contestId, outputDirname):
         try:
-                conn=psycopg2.connect("dbname='database' user='cmsuser' host='localhost' password='cms'")
+                conn=psycopg2.connect("dbname='cmsdb' user='cmsuser' host='localhost' password='oiadbpass'")
         except:
                 print "I am unable to connect to the database."
                 return
@@ -40,8 +42,12 @@ def run(contestId, outputDirname):
         cur.execute(query, {"contestId" : contestId})
         rows = cur.fetchall()
         cur.close()
+        languageFileExtension = {
+					"C++11 / g++" : "cpp",
+					"Java / JDK" : "java",
+			}
         for submissionId, username, taskName, loid, language in rows:
-                filename = os.path.join(outputDirname, username, taskName, "{0}.{1}".format(submissionId, language))
+                filename = os.path.join(outputDirname, username, taskName, "{0}.{1}".format(submissionId, languageFileExtension[language]))
                 print submissionId, username, taskName, loid,filename
                 with fullyCreateFile(filename) as f:
                         lobject = conn.lobject(oid=loid, mode="r")
